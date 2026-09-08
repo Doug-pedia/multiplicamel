@@ -8,19 +8,20 @@
     body {
       font-family: Arial, sans-serif;
       max-width: 600px;
-      margin: 30px auto;
-      padding: 20px;
+      margin: 20px auto;
+      padding: 15px;
       background-color: #f4f6f9;
     }
     .card {
       background: #fff;
-      padding: 24px;
+      padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     h2 {
       margin-top: 0;
       color: #333;
+      text-align: center;
     }
     table {
       width: 100%;
@@ -28,7 +29,7 @@
       margin: 20px 0;
     }
     th, td {
-      padding: 12px;
+      padding: 10px;
       border-bottom: 1px solid #ddd;
       text-align: left;
     }
@@ -36,10 +37,12 @@
       background-color: #f8f9fa;
     }
     input[type="number"] {
-      width: 80px;
-      padding: 6px;
+      width: 70px;
+      padding: 8px;
+      font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 4px;
+      text-align: center;
     }
     input[type="number"]:focus {
       border-color: #0d6efd;
@@ -62,7 +65,7 @@
     }
     .btn-limpar {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       background-color: #dc3545;
       color: white;
       border: none;
@@ -70,7 +73,6 @@
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s;
     }
     .btn-limpar:hover {
       background-color: #bb2d3b;
@@ -85,9 +87,9 @@
   <table>
     <thead>
       <tr>
-        <th>Item (Peso Unitário)</th>
-        <th>Quantidade</th>
-        <th>Subtotal (kg)</th>
+        <th>Peso Unitário</th>
+        <th>Qtd</th>
+        <th>Subtotal</th>
       </tr>
     </thead>
     <tbody>
@@ -115,7 +117,7 @@
   </table>
 
   <div class="resultado-final">
-    <span>Peso Total do Lote:</span>
+    <span>Total do Lote:</span>
     <span id="total-geral">0.000 kg</span>
   </div>
 
@@ -132,28 +134,24 @@
       const quantidade = parseInt(input.value) || 0;
       const subtotal = pesoUnitario * quantidade;
 
-      // Atualiza o subtotal da linha
       const tdSubtotal = input.closest('tr').querySelector('.subtotal');
       tdSubtotal.textContent = subtotal.toFixed(3) + ' kg';
 
       totalGeral += subtotal;
     });
 
-    // Atualiza o total geral
     document.getElementById('total-geral').textContent = totalGeral.toFixed(3) + ' kg';
   }
 
   function mudarComEnter(event, indexAtual) {
     if (event.key === 'Enter') {
-      event.preventDefault(); // Impede o envio padrão de formulários
+      event.preventDefault();
       const inputs = document.querySelectorAll('input[type="number"]');
       
-      // Se houver um próximo campo, move o foco para ele e seleciona o texto
       if (indexAtual + 1 < inputs.length) {
         inputs[indexAtual + 1].focus();
         inputs[indexAtual + 1].select();
       } else {
-        // Se for o último campo, vai para o botão limpar
         document.getElementById('btn-limpar').focus();
       }
     }
@@ -165,7 +163,6 @@
       input.value = 0;
     });
     calcular();
-    // Foca de volta no primeiro campo após limpar
     inputs[0].focus();
     inputs[0].select();
   }
