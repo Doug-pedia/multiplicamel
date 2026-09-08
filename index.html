@@ -96,35 +96,51 @@
       <tr>
         <td>0,250 kg (250g)</td>
         <td><input type="number" min="0" value="0" data-peso="0.250" oninput="calcular()" onkeydown="mudarComEnter(event, 0)" onclick="this.select()"></td>
-        <td class="subtotal">0.000 kg</td>
+        <td class="subtotal">0 kg e 0g</td>
       </tr>
       <tr>
         <td>0,350 kg (350g)</td>
         <td><input type="number" min="0" value="0" data-peso="0.350" oninput="calcular()" onkeydown="mudarComEnter(event, 1)" onclick="this.select()"></td>
-        <td class="subtotal">0.000 kg</td>
+        <td class="subtotal">0 kg e 0g</td>
       </tr>
       <tr>
         <td>0,500 kg (500g)</td>
         <td><input type="number" min="0" value="0" data-peso="0.500" oninput="calcular()" onkeydown="mudarComEnter(event, 2)" onclick="this.select()"></td>
-        <td class="subtotal">0.000 kg</td>
+        <td class="subtotal">0 kg e 0g</td>
       </tr>
       <tr>
-        <td>1 kg (1kg)</td>
+        <td>1,000 kg (1kg)</td>
         <td><input type="number" min="0" value="0" data-peso="1.000" oninput="calcular()" onkeydown="mudarComEnter(event, 3)" onclick="this.select()"></td>
-        <td class="subtotal">0.000 kg</td>
+        <td class="subtotal">0 kg e 0g</td>
       </tr>
     </tbody>
   </table>
 
   <div class="resultado-final">
     <span>Total do Lote:</span>
-    <span id="total-geral">0.000 kg</span>
+    <span id="total-geral">0 kg e 0g</span>
   </div>
 
   <button id="btn-limpar" class="btn-limpar" onclick="limpar()">Limpar Campos</button>
 </div>
 
 <script>
+  // Função para formatar o número em "X kg e Yg"
+  function formatarPeso(pesoEmKg) {
+    // Arredonda para evitar problemas de precisão de ponto flutuante no JS
+    const totalGramas = Math.round(pesoEmKg * 1000);
+    const quilos = Math.floor(totalGramas / 1000);
+    const gramas = totalGramas % 1000;
+
+    if (quilos > 0 && gramas > 0) {
+      return `${quilos} kg e ${gramas}g`;
+    } else if (quilos > 0) {
+      return `${quilos} kg`;
+    } else {
+      return `${gramas}g`;
+    }
+  }
+
   function calcular() {
     const inputs = document.querySelectorAll('input[type="number"]');
     let totalGeral = 0;
@@ -135,12 +151,12 @@
       const subtotal = pesoUnitario * quantidade;
 
       const tdSubtotal = input.closest('tr').querySelector('.subtotal');
-      tdSubtotal.textContent = subtotal.toFixed(3) + ' kg';
+      tdSubtotal.textContent = formatarPeso(subtotal);
 
       totalGeral += subtotal;
     });
 
-    document.getElementById('total-geral').textContent = totalGeral.toFixed(3) + ' kg';
+    document.getElementById('total-geral').textContent = formatarPeso(totalGeral);
   }
 
   function mudarComEnter(event, indexAtual) {
