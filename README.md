@@ -13,6 +13,7 @@ https://doug-pedia.github.io/minisistemas/
 * Cadastro CNPJ (`Cadastro-CNPJ.html`) - Formulário e cadastro de CNPJ.
 * Consulta NFS-e (`consulta-nfse.html`) - Painel para consulta de Notas Fiscais de Serviço.
 * Consulta CNPJ (`consulta-cnpj.html`) - Consulta e verificação de dados de CNPJ.
+* Gerador de Etiquetas NFe (`Gerador de Etiquetas NFe (100x50 mm).html`) - Gerador de etiquetas para NFe no formato 100x50 mm.
 
 ## Estrutura do Repositório
 
@@ -22,4 +23,5 @@ minisistemas/
 ├── Multipica-Mel.html
 ├── Cadastro-CNPJ.html
 ├── consulta-nfse.html
-└── consulta-cnpj.html
+├── consulta-cnpj.html
+└── Gerador de Etiquetas NFe (100x50 mm).html
