@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Etiquetas NF-e (100x50mm)</title>
+
+    <!-- Biblioteca para gerar código de barras JSBarcode -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <style>
+        /* ===================================================
+           ESTILOS PARA TELA (Painel de Controle e Pré-visualização)
+           =================================================== */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .no-print {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-item label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .control-item input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-print {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+
+        .btn-print:hover {
+            background-color: #218838;
+        }
+
+        /* Container de etiquetas na tela */
+        #container-etiquetas {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* ===================================================
+           ESTILOS DA ETIQUETA (Tamanho 100x50mm)
+           =================================================== */
+        .etiqueta-wrapper {
+            width: 100mm;
+            height: 50mm;
+            background-color: white;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            padding: 2mm 3mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-after: always;
+            overflow: hidden;
+        }
+
+        /* Bloco Destinatário / Remetente */
+        .bloco {
+            font-size: 8pt;
+            line-height: 1.15;
+            color: #000;
+        }
+
+        .titulo {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1mm;
+        }
+
+        .nome {
+            font-weight: bold;
+            font-size: 8.5pt;
+        }
+
+        .endereco {
+            font-size: 8pt;
+        }
+
+        /* Código de barras */
+        .barcode-container {
+            text-align: center;
+            margin-top: -1mm;
+        }
+
+        .barcode-container svg {
+            max-width: 90%;
+            height: 12mm;
+        }
+
+        .linha-divisoria {
+            border-top: 1px dashed #ccc;
+            margin: 1mm 0;
+        }
+
+        /* ===================================================
+           ESTILOS DE IMPRESSÃO (@media print)
+           =================================================== */
+        @media print {
+            @page {
+                size: 100mm 50mm;
+                margin: 0;
+            }
+
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            #container-etiquetas {
+                display: block;
+            }
+
+            .etiqueta-wrapper {
+                border: none;
+                width: 100mm;
+                height: 50mm;
+                margin: 0;
+                padding: 2mm 4mm;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+
+            .linha-divisoria {
+                border-top: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PAINEL DE CONTROLE (Não sai na impressão) -->
+    <div class="no-print">
+        <h2>Gerador de Etiquetas NFe (100x50 mm)</h2>
+        <p>Selecione os arquivos XML e a quantidade de cópias:</p>
+        
+        <div class="control-group">
+            <div class="control-item">
+                <label for="xmlInput">Arquivos XML:</label>
+                <input type="file" id="xmlInput" accept=".xml" multiple>
+            </div>
+
+            <div class="control-item">
+                <label for="copiesInput">Cópias por XML:</label>
+                <input type="number" id="copiesInput" value="1" min="1" max="100">
+            </div>
+
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Etiquetas</button>
+        </div>
+    </div>
+
+    <!-- ÁREA ONDE AS ETIQUETAS SERÃO GERADAS -->
+    <div id="container-etiquetas"></div>
+
+    <script>
+        const xmlInput = document.getElementById('xmlInput');
+        const copiesInput = document.getElementById('copiesInput');
+
+        // Atualiza a visualização se o usuário trocar os arquivos ou alterar a quantidade de cópias
+        xmlInput.addEventListener('change', gerarEtiquetas);
+        copiesInput.addEventListener('input', gerarEtiquetas);
+
+        function gerarEtiquetas() {
+            const files = xmlInput.files;
+            const copies = parseInt(copiesInput.value) || 1;
+            const container = document.getElementById('container-etiquetas');
+            container.innerHTML = ''; // Limpa etiquetas anteriores
+
+            if (files.length === 0) return;
+
+            Array.from(files).forEach((file, fileIndex) => {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const xmlText = e.target.result;
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+                    // Função auxiliar para buscar tags ignorando namespace
+                    const getNodeValue = (parent, tagName) => {
+                        const el = parent ? parent.getElementsByTagName(tagName)[0] : null;
+                        return el ? el.textContent.trim() : '';
+                    };
+
+                    // Extrair Número da NF-e (nNF)
+                    let nNF = getNodeValue(xmlDoc, 'nNF') || '000000';
+                    let nNFFormatted = nNF.padStart(6, '0');
+
+                    // --- DESTINATÁRIO ---
+                    const destNode = xmlDoc.getElementsByTagName('dest')[0];
+                    const destNome = getNodeValue(destNode, 'xNome');
+                    const destEnder = destNode ? destNode.getElementsByTagName('enderDest')[0] : null;
+                    
+                    const destLgr = getNodeValue(destEnder, 'xLgr');
+                    const destNro = getNodeValue(destEnder, 'nro');
+                    const destCpl = getNodeValue(destEnder, 'xCpl');
+                    const destBairro = getNodeValue(destEnder, 'xBairro');
+                    const destMun = getNodeValue(destEnder, 'xMun');
+                    const destUF = getNodeValue(destEnder, 'UF');
+                    let destCEP = getNodeValue(destEnder, 'CEP');
+                    if (destCEP.length === 8) {
+                        destCEP = destCEP.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+                    }
+
+                    // --- REMETENTE (EMITENTE) ---
+                    const emitNode = xmlDoc.getElementsByTagName('emit')[0];
+                    const emitNome = getNodeValue(emitNode, 'xNome');
+                    const emitEnder = emitNode ? emitNode.getElementsByTagName('enderEmit')[0] : null;
+
+                    const emitLgr = getNodeValue(emitEnder, 'xLgr');
+                    const emitNro = getNodeValue(emitEnder, 'nro');
+                    const emitCpl = getNodeValue(emitEnder, 'xCpl');
+                    const emitBairro = getNodeValue(emitEnder, 'xBairro');
+                    const emitMun = getNodeValue(emitEnder, 'xMun');
+                    const emitUF = getNodeValue(emitEnder, 'UF');
+                    let emitCEP = getNodeValue(emitEnder, 'CEP');
+                    if (emitCEP.length === 8) {
+                        emitCEP = emitCEP.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+                    }
+
+                    // Loop para criar o número de cópias solicitado
+                    for (let c = 0; c < copies; c++) {
+                        const barcodeId = `barcode-${fileIndex}-${c}`;
+
+                        const htmlEtiqueta = `
+                            <div class="etiqueta-wrapper">
+                                <!-- BLOCO DESTINATÁRIO -->
+                                <div class="bloco">
+                                    <div class="titulo">DESTINATÁRIO</div>
+                                    <div class="nome">${destNome}</div>
+                                    <div class="endereco">
+                                        ${destLgr}, nº ${destNro} ${destCpl ? '- ' + destCpl : ''}<br>
+                                        ${destBairro} - ${destMun} - ${destUF}<br>
+                                        Cep: ${destCEP}
+                                    </div>
+                                    <div class="barcode-container">
+                                        <svg id="${barcodeId}"></svg>
+                                    </div>
+                                </div>
+
+                                <div class="linha-divisoria"></div>
+
+                                <!-- BLOCO REMETENTE -->
+                                <div class="bloco">
+                                    <div class="titulo">REMETENTE</div>
+                                    <div class="nome">${emitNome}</div>
+                                    <div class="endereco">
+                                        ${emitLgr}, nº ${emitNro} ${emitCpl ? '- ' + emitCpl : ''}<br>
+                                        ${emitBairro} - ${emitMun} - ${emitUF}<br>
+                                        Cep: ${emitCEP}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        container.insertAdjacentHTML('beforeend', htmlEtiqueta);
+
+                        // Gerar o código de barras
+                        JsBarcode(`#${barcodeId}`, nNFFormatted, {
+                            format: "CODE128",
+                            width: 1.8,
+                            height: 35,
+                            displayValue: true,
+                            fontSize: 10,
+                            margin: 2
+                        });
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+        }
+    </script>
+</body>
+</html>

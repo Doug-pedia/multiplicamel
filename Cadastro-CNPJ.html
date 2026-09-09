@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Pro de CNPJ</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --success: #16a34a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-primary {
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 110px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #fef2f2;
+            color: var(--error);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .results {
+            display: none;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .btn-copy-all {
+            background-color: #f1f5f9;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy-all:hover {
+            background-color: #e2e8f0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .info-card {
+            background-color: #f8fafc;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            position: relative;
+        }
+
+        .info-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 0.92rem;
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .badge-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .badge-ativa { background-color: #dcfce7; color: #15803d; }
+        .badge-inativa { background-color: #fee2e2; color: #b91c1c; }
+
+        .btn-copy {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-copy:hover {
+            background-color: #e2e8f0;
+            color: var(--primary);
+        }
+
+        .btn-copy.copied {
+            color: var(--success);
+            background-color: #dcfce7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Consulta de CNPJ</h1>
+        <p>Suporta CNPJ Numérico e Alfanumérico (Novo Padrão)</p>
+    </header>
+
+    <div class="search-box">
+        <div class="input-wrapper">
+            <input type="text" id="cnpjInput" placeholder="00.000.000/E08G-12" maxlength="18">
+        </div>
+        <button class="btn-primary" id="searchBtn" onclick="consultarCNPJ()">
+            <span id="btnText">Buscar</span>
+            <div id="btnSpinner" class="spinner" style="display: none;"></div>
+        </button>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+
+    <div id="results" class="results">
+        <div class="actions-bar">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Resultado da busca:</span>
+            <button class="btn-copy-all" id="btnCopyAll" onclick="copiarTudo()">📋 Copiar Todos os Dados</button>
+        </div>
+
+        <div class="grid">
+            <div class="info-card full-width">
+                <div class="info-content">
+                    <div class="info-label">Razão Social</div>
+                    <div class="info-value" id="razaoSocial">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('razaoSocial', this)">Copiar</button>
+            </div>
+
+            <div class="info-card full-width">
+                <div class="info-content">
+                    <div class="info-label">Nome Fantasia</div>
+                    <div class="info-value" id="nomeFantasia">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('nomeFantasia', this)">Copiar</button>
+            </div>
+
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-label">Situação Cadastral</div>
+                    <div class="info-value" id="situacao">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('situacao', this)">Copiar</button>
+            </div>
+
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-label">Inscrição Estadual (I.E.)</div>
+                    <div class="info-value" id="inscricaoEstadual">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('inscricaoEstadual', this)">Copiar</button>
+            </div>
+
+            <div class="info-card full-width">
+                <div class="info-content">
+                    <div class="info-label">Atividade Econômica Principal (CNAE)</div>
+                    <div class="info-value" id="atividade">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('atividade', this)">Copiar</button>
+            </div>
+
+            <div class="info-card full-width">
+                <div class="info-content">
+                    <div class="info-label">Endereço Completo</div>
+                    <div class="info-value" id="endereco">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('endereco', this)">Copiar</button>
+            </div>
+
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-label">CEP</div>
+                    <div class="info-value" id="cep">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('cep', this)">Copiar</button>
+            </div>
+
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-label">E-mail</div>
+                    <div class="info-value" id="email">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('email', this)">Copiar</button>
+            </div>
+
+            <div class="info-card">
+                <div class="info-content">
+                    <div class="info-label">Telefone</div>
+                    <div class="info-value" id="telefone">-</div>
+                </div>
+                <button class="btn-copy" onclick="copiarTexto('telefone', this)">Copiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const cnpjInput = document.getElementById('cnpjInput');
+    let dadosAtuais = {};
+
+    // Função para formatar CNPJ Alfanumérico (XX.XXX.XXX/XXXX-XX)
+    function aplicarMascaraCNPJ(valor) {
+        // Remove tudo que não for número ou letra (A-Z, 0-9) e converte para maiúsculo
+        let clean = valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (clean.length > 14) clean = clean.slice(0, 14);
+
+        let result = clean;
+        if (clean.length > 12) {
+            result = `${clean.slice(0,2)}.${clean.slice(2,5)}.${clean.slice(5,8)}/${clean.slice(8,12)}-${clean.slice(12)}`;
+        } else if (clean.length > 8) {
+            result = `${clean.slice(0,2)}.${clean.slice(2,5)}.${clean.slice(5,8)}/${clean.slice(8)}`;
+        } else if (clean.length > 5) {
+            result = `${clean.slice(0,2)}.${clean.slice(2,5)}.${clean.slice(5)}`;
+        } else if (clean.length > 2) {
+            result = `${clean.slice(0,2)}.${clean.slice(2)}`;
+        }
+        return result;
+    }
+
+    cnpjInput.addEventListener('input', (e) => {
+        e.target.value = aplicarMascaraCNPJ(e.target.value);
+    });
+
+    cnpjInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') consultarCNPJ();
+    });
+
+    async function consultarCNPJ() {
+        // Remove pontuações e símbolos para validação e consulta na API
+        const rawCnpj = cnpjInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const errorDiv = document.getElementById('errorMessage');
+        const resultsDiv = document.getElementById('results');
+        const searchBtn = document.getElementById('searchBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        errorDiv.style.display = 'none';
+        resultsDiv.classList.remove('active');
+
+        if (rawCnpj.length !== 14) {
+            showError('Por favor, digite um CNPJ válido com 14 caracteres (letras e números).');
+            return;
+        }
+
+        searchBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'block';
+
+        try {
+            let response = await fetch(`https://publica.cnpj.ws/cnpj/${rawCnpj}`);
+            
+            if (response.status === 429) {
+                await consultarBrasilAPI(rawCnpj);
+                return;
+            }
+
+            if (!response.ok) {
+                if (response.status === 404) throw new Error('CNPJ não encontrado na base de dados.');
+                await consultarBrasilAPI(rawCnpj);
+                return;
+            }
+
+            const data = await response.json();
+            processarDadosCnpjWs(data);
+
+        } catch (error) {
+            showError(error.message || 'Erro ao consultar o CNPJ. Tente novamente.');
+        } finally {
+            searchBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }
+    }
+
+    function processarDadosCnpjWs(data) {
+        const est = data.estabelecimento || {};
+        
+        // Formatar Endereço
+        const rua = [est.tipo_logradouro, est.logradouro].filter(Boolean).join(' ');
+        const num = est.numero ? `, Nº ${est.numero}` : '';
+        const comp = est.complemento ? ` (${est.complemento})` : '';
+        const bairro = est.bairro ? ` - ${est.bairro}` : '';
+        const cidadeUf = (est.cidade?.nome && est.estado?.sigla) ? `, ${est.cidade.nome}/${est.estado.sigla}` : '';
+        const enderecoCompleto = `${rua}${num}${comp}${bairro}${cidadeUf}`.trim() || 'Não informado';
+
+        // Tratar Inscrição Estadual
+        let ieTexto = 'Isento / Não cadastrada';
+        if (est.inscricoes_estaduais && est.inscricoes_estaduais.length > 0) {
+            ieTexto = est.inscricoes_estaduais
+                .map(item => `${item.inscricao_estadual} (${item.estado?.sigla || ''})${item.ativo ? '' : ' [Inativa]'}`)
+                .join(', ');
+        }
+
+        const situacaoNome = est.situacao_cadastral || 'NÃO INFORMADA';
+
+        dadosAtuais = {
+            cnpj: cnpjInput.value,
+            razaoSocial: data.razao_social || 'Não informada',
+            nomeFantasia: est.nome_fantasia || 'Não informado',
+            situacao: situacaoNome,
+            inscricaoEstadual: ieTexto,
+            atividade: est.atividade_principal?.descricao ? `${est.atividade_principal.id || ''} - ${est.atividade_principal.descricao}` : 'Não informada',
+            endereco: enderecoCompleto,
+            cep: est.cep ? formatarCEP(est.cep) : 'Não informado',
+            email: est.email || 'Não informado',
+            telefone: (est.ddd1 && est.telefone1) ? `(${est.ddd1}) ${est.telefone1}` : 'Não informado'
+        };
+
+        renderizarResultados();
+    }
+
+    async function consultarBrasilAPI(rawCnpj) {
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${rawCnpj}`);
+            if (!response.ok) throw new Error('CNPJ não encontrado.');
+            
+            const data = await response.json();
+
+            const rua = data.logradouro || '';
+            const num = data.numero ? `, Nº ${data.numero}` : '';
+            const comp = data.complemento ? ` (${data.complemento})` : '';
+            const bairro = data.bairro ? ` - ${data.bairro}` : '';
+            const cidadeUf = (data.municipio && data.uf) ? `, ${data.municipio}/${data.uf}` : '';
+            const enderecoCompleto = `${rua}${num}${comp}${bairro}${cidadeUf}`.trim() || 'Não informado';
+
+            const ddd = data.ddd_telefone_1 ? data.ddd_telefone_1.slice(0,2) : '';
+            const tel = data.ddd_telefone_1 ? data.ddd_telefone_1.slice(2) : '';
+
+            dadosAtuais = {
+                cnpj: cnpjInput.value,
+                razaoSocial: data.razao_social || 'Não informada',
+                nomeFantasia: data.nome_fantasia || 'Não informado',
+                situacao: data.descricao_situacao_cadastral || 'NÃO INFORMADA',
+                inscricaoEstadual: 'Indisponível na API de contingência',
+                atividade: data.cnae_fiscal_descricao || 'Não informada',
+                endereco: enderecoCompleto,
+                cep: data.cep ? formatarCEP(data.cep) : 'Não informado',
+                email: data.email || 'Não informado',
+                telefone: data.ddd_telefone_1 ? `(${ddd}) ${tel}` : 'Não informado'
+            };
+
+            renderizarResultados();
+        } catch (err) {
+            showError('Não foi possível consultar os dados deste CNPJ.');
+        }
+    }
+
+    function renderizarResultados() {
+        document.getElementById('razaoSocial').innerText = dadosAtuais.razaoSocial;
+        document.getElementById('nomeFantasia').innerText = dadosAtuais.nomeFantasia;
+        document.getElementById('inscricaoEstadual').innerText = dadosAtuais.inscricaoEstadual;
+        document.getElementById('atividade').innerText = dadosAtuais.atividade;
+        document.getElementById('endereco').innerText = dadosAtuais.endereco;
+        document.getElementById('cep').innerText = dadosAtuais.cep;
+        document.getElementById('email').innerText = dadosAtuais.email;
+        document.getElementById('telefone').innerText = dadosAtuais.telefone;
+
+        const sitElement = document.getElementById('situacao');
+        const isAtiva = dadosAtuais.situacao.toUpperCase().includes('ATIVA');
+        sitElement.innerHTML = `<span class="badge-status ${isAtiva ? 'badge-ativa' : 'badge-inativa'}">${dadosAtuais.situacao}</span>`;
+
+        document.getElementById('results').classList.add('active');
+    }
+
+    function copiarTexto(elementId, btnElement) {
+        let texto = (elementId === 'situacao') ? dadosAtuais.situacao : document.getElementById(elementId).innerText;
+
+        if (texto && texto !== '-' && texto !== 'Não informado') {
+            navigator.clipboard.writeText(texto).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = '✓ Copiado';
+                btnElement.classList.add('copied');
+                
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.classList.remove('copied');
+                }, 1800);
+            });
+        }
+    }
+
+    function copiarTudo() {
+        const textoFormatado = `
+CNPJ: ${dadosAtuais.cnpj}
+Razão Social: ${dadosAtuais.razaoSocial}
+Nome Fantasia: ${dadosAtuais.nomeFantasia}
+Situação Cadastral: ${dadosAtuais.situacao}
+I.E.: ${dadosAtuais.inscricaoEstadual}
+Atividade: ${dadosAtuais.atividade}
+Endereço: ${dadosAtuais.endereco}
+CEP: ${dadosAtuais.cep}
+E-mail: ${dadosAtuais.email}
+Telefone: ${dadosAtuais.telefone}
+        `.trim();
+
+        navigator.clipboard.writeText(textoFormatado).then(() => {
+            const btn = document.getElementById('btnCopyAll');
+            btn.innerText = '✓ Todos os dados copiados!';
+            setTimeout(() => {
+                btn.innerText = '📋 Copiar Todos os Dados';
+            }, 2000);
+        });
+    }
+
+    function formatarCEP(cep) {
+        const clean = cep.replace(/\D/g, '');
+        return clean.length === 8 ? clean.replace(/^(\d{5})(\d{3})/, '$1-$2') : cep;
+    }
+
+    function showError(msg) {
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.innerText = msg;
+        errorDiv.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
